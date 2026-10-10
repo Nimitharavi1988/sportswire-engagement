@@ -24,3 +24,6 @@ await sql`CREATE TABLE IF NOT EXISTS post_metric (
   PRIMARY KEY (post_id, taken_at)
 )`;
 console.log("migrated");
+await sql`ALTER TABLE post_metric ADD COLUMN IF NOT EXISTS views INT`;
+await sql`ALTER TABLE post_metric ADD COLUMN IF NOT EXISTS is_control BOOLEAN NOT NULL DEFAULT false`;
+await sql`ALTER TABLE post_metric ADD COLUMN IF NOT EXISTS kind TEXT`;
