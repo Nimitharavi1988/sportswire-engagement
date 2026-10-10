@@ -1,0 +1,12 @@
+{
+  "name": "sportswire-engagement",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "ingest": "tsx src/ingest.ts",
+    "probe": "tsx src/probe.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": { "@neondatabase/serverless": "^0.10.4", "drizzle-orm": "^0.38.0" },
+  "devDependencies": { "tsx": "^4.19.0", "typescript": "^5.6.0", "@types/node": "^22.0.0" }
+}
