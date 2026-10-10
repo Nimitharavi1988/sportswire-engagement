@@ -27,3 +27,10 @@ console.log("migrated");
 await sql`ALTER TABLE post_metric ADD COLUMN IF NOT EXISTS views INT`;
 await sql`ALTER TABLE post_metric ADD COLUMN IF NOT EXISTS is_control BOOLEAN NOT NULL DEFAULT false`;
 await sql`ALTER TABLE post_metric ADD COLUMN IF NOT EXISTS kind TEXT`;
+await sql`CREATE TABLE IF NOT EXISTS page_comment (
+  post_id TEXT PRIMARY KEY, platform TEXT NOT NULL, page_key TEXT NOT NULL,
+  post_created_at TIMESTAMPTZ NOT NULL, planned_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  holdout BOOLEAN NOT NULL DEFAULT false,
+  kind TEXT, text TEXT, status TEXT NOT NULL, reason TEXT, caption TEXT, article_url TEXT,
+  posted_at TIMESTAMPTZ, posted_comment_id TEXT
+)`;

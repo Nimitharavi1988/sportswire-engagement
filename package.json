@@ -6,6 +6,7 @@
     "ingest": "tsx src/ingest.ts",
     "insights": "tsx src/insights.ts",
     "report": "tsx src/report.ts",
+    "converse": "tsx src/converse.ts",
     "migrate": "tsx src/migrate.ts",
     "typecheck": "tsc --noEmit"
   },
