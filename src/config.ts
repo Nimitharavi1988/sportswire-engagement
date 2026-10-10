@@ -4,7 +4,7 @@ export interface PilotPage { key: string; label: string; pageId: string; instagr
 
 export const PILOT_PAGES: PilotPage[] = [
   { key: "cricketlive", label: "Sportswirecricketlive", pageId: "1389324964254541", instagramId: "17841422405517404" },
-  { key: "us", label: "SportsWire US Live", pageId: "1456000910921996" /* instagramId: fill from main repo facebookDestinations.ts */ },
+  { key: "us", label: "SportsWire US Live", pageId: "1456000910921996", instagramId: "17841424699143294" },
 ];
 
 // Read-only reference Pages for comparison in the dashboard. No writes, ever.
