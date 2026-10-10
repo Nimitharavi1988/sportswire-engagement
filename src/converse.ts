@@ -16,7 +16,7 @@ const RULES = `Write ONE comment (max 220 chars, 0-1 emoji, no hashtags/links) f
 - comparison: asks to choose between options -> pick ONE side + one-line reason (sport takes only)
 - loose: statement/news -> short natural reaction
 Use ONLY facts in the texts below; if unsure or sensitive (politics, religion, deaths, injuries, legal, abuse, betting, a person's character) set c to null. Never repeat a fact or number already in the post: add a view, an implication or a different fact from the article. Only call it a question if the post literally asks one; a comparison only if it names the options. Do not pick sides between named players or their fan bases (e.g. Reese vs Clark): set c to null. Reply in plain words that make sense on their own. Never start with Great/Wow/Interesting/Absolutely/Indeed. Fan tone, not a headline.
-JSON: {"k":"question|comparison|loose","c":string|null,"s":string|null (reason if c is null)}`;
+JSON: {"k":"question|comparison|loose","o":"people|teams|ideas|none" (what a comparison chooses between),"c":string|null,"s":string|null (reason if c is null; never put the comment here)}`;
 
 const SENSITIVE = /\b(died|dies|death|dead|killed|suicide|rape|assault|lawsuit|court|arrested|police|religio\w*|politic\w*|election|government|betting|gambl\w*|racis\w*|abuse)\b/i;
 
@@ -31,12 +31,24 @@ async function plan(c: Cand) {
   if (holdout) return save("holdout", null, null, null);
   const article = c.articleUrl ? await fetchArticle(c.articleUrl) : null;
   if (SENSITIVE.test(c.caption + " " + (article ?? ""))) return save("skipped", null, null, "sensitive terms");
-  const out = await askJson<{ k: string; c: string | null; s: string | null }>(
+  const out = await askJson<{ k: string; o?: string; c: string | null; s: string | null }>(
     `${RULES}\n\nPOST TEXT:\n${c.caption.slice(0, 600)}\n\nARTICLE TEXT:\n${article ?? "(not available - use the post text only)"}`);
   if (!out) return; // transient: leave unsaved so the next run retries it
   const text = out.c?.trim() ?? "";
   if (!text) return save("skipped", out.k ?? null, null, out.s ?? "no comment");
   if (text.length > 240 || /https?:|www\.|#\w/.test(text) || /^(great|wow|interesting|absolutely|indeed)\b/i.test(text)) return save("skipped", out.k, null, "failed checks");
+  if (out.k === "comparison" && out.o === "people") return save("skipped", out.k, null, "picks between people");
+  const source = c.caption + " " + (article ?? "");
+  const nums = (text.match(/d[d.,]*/g) ?? []).map((n) => n.replace(/[.,]+$/, ""));
+  if (nums.some((n) => !source.includes(n))) return save("skipped", out.k, null, "number not in source");
+  const check = await askJson<{ ok: boolean }>(
+    `SOURCE:
+${source.slice(0, 1500)}
+
+COMMENT: ${text}
+
+Is every factual claim in COMMENT supported by SOURCE (opinion and reaction are fine, invented facts, stats, awards or streaks are not)? JSON: {"ok":true|false}`);
+  if (!check?.ok) return save("skipped", out.k, null, "claim not supported by source");
   const recent = await sql`SELECT text FROM page_comment WHERE text IS NOT NULL ORDER BY planned_at DESC LIMIT 30`;
   const open = (s: string) => s.toLowerCase().split(/\s+/).slice(0, 3).join(" ");
   if (recent.some((r: any) => open(r.text) === open(text))) return save("skipped", out.k, null, "repeats an earlier opening");
