@@ -25,6 +25,8 @@ const scored = rows.map((r) => {
 });
 const breakouts = scored.filter((r) => r.mult !== null && r.mult >= THRESHOLD).sort((a, b) => b.mult - a.mult);
 
+const plans = await sql`SELECT post_id, platform, page_key, kind, status, text, reason, caption, planned_at FROM page_comment ORDER BY planned_at DESC LIMIT 200` as any[];
+const counts = Object.fromEntries(["planned", "skipped", "holdout", "posted"].map((k) => [k, plans.filter((p) => p.status === k).length]));
 const esc = (s: unknown) => String(s ?? "").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]!));
 const link = (r: any) => r.platform === "fb" ? `https://www.facebook.com/${r.post_id}` : null;
 const tr = (r: any) => `<tr><td>${esc(r.page_key)}${r.is_control ? " <i>(control)</i>" : ""}</td><td>${r.platform.toUpperCase()}</td><td>${esc(r.kind)}</td>
@@ -41,12 +43,15 @@ const byFormat = [...new Set(scored.map((r) => `${r.platform}|${r.kind}`))].sort
   return rs.length ? `<tr><td>${k.replace("|", " ")}</td><td>${rs.length}</td><td>${Math.round(median(rs.map((r) => +r.reach)))}</td></tr>` : "";
 }).join("");
 
+const planRows = (st: string, limit: number) => plans.filter((p) => p.status === st).slice(0, limit).map((p) => `<tr><td>${esc(p.page_key)} ${p.platform.toUpperCase()}</td><td>${esc(p.kind ?? "")}</td><td class="cap">${esc((p.caption ?? "").replace(/s+/g, " ").slice(0, 220))}</td><td><b>${esc(p.text ?? p.reason ?? "")}</b></td></tr>`).join("");
 writeFileSync("report.html", `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Breakout posts</title>
 <style>body{font:15px/1.5 system-ui,sans-serif;max-width:1000px;margin:0 auto;padding:16px;color:#1c2b22;background:#fff}h1{font-size:22px}h2{font-size:17px;margin-top:28px}
 table{border-collapse:collapse;width:100%;font-size:13px}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #e3e8e5}th{color:#5b6b61;font-weight:600}
-.wrap{overflow-x:auto}p.n{color:#5b6b61;font-size:13px}a{color:#1d6b3f}</style>
+.wrap{overflow-x:auto}p.n{color:#5b6b61;font-size:13px}a{color:#1d6b3f}td.cap{color:#5b6b61;max-width:380px}</style>
 <h1>Breakout posts</h1><p class="n">A post is flagged when its reach is ${THRESHOLD}× or more the median for the same Page, platform and age band (needs ${MIN_PEERS}+ comparable posts; median floored at ${FLOOR}). Generated ${new Date().toISOString().slice(0, 16)}Z.</p>
 <h2>Breakouts (${breakouts.length})</h2><div class="wrap"><table>${head}${breakouts.map(tr).join("") || `<tr><td colspan=11>None right now.</td></tr>`}</table></div>
+<h2>Planned Page comments (dry-run, ${counts.planned} planned)</h2><p class="n">Nothing here has been posted. ${counts.holdout} posts held out on purpose (no comment, for comparison); ${counts.skipped} skipped by the safety checks.</p><div class="wrap"><table><tr><th>Page</th><th>Type</th><th>Post</th><th>Planned comment</th></tr>${planRows("planned", 40) || `<tr><td colspan=4>None yet.</td></tr>`}</table></div>
+<h2>Skipped (why)</h2><div class="wrap"><table><tr><th>Page</th><th>Type</th><th>Post</th><th>Reason</th></tr>${planRows("skipped", 15)}</table></div>
 <h2>By Page</h2><div class="wrap"><table><tr><th>Page</th><th>Posts</th><th>Median reach</th><th>Best reach</th><th>Breakouts</th></tr>${summary}</table></div>
 <h2>By format (pilot Pages)</h2><div class="wrap"><table><tr><th>Format</th><th>Posts</th><th>Median reach</th></tr>${byFormat}</table></div>
 <h2>Top by shares per reach</h2><div class="wrap"><table>${head}${scored.filter((r) => r.shares > 0).sort((a, b) => b.spr - a.spr).slice(0, 10).map(tr).join("") || `<tr><td colspan=11>No shares recorded yet.</td></tr>`}</table></div>`);
