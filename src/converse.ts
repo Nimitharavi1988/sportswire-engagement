@@ -19,7 +19,7 @@ Use ONLY facts in the texts below; if unsure or sensitive (politics, religion, d
 JSON: {"k":"question|comparison|loose","o":"people|teams|ideas|none" (what a comparison chooses between),"c":string|null,"s":string|null (reason if c is null; never put the comment here)}`;
 
 const cleanReason = (r: string | null | undefined) => (r && r.length <= 70 && !/[!]/.test(r) ? r : "model declined");
-const HYPE = /(dynasty|legacy|legend(ary)?|greatest|goat|history|historic|unstoppable|masterclass|unreal|insane|mind-?blowing|pure magic|defines?)/i;
+const HYPE = /\b(dynasty|legacy|legend(ary)?|greatest|goat|history|historic|unstoppable|masterclass|unreal|insane|mind-?blowing|pure magic|defines?)\b/i;
 const SENSITIVE = /\b(died|dies|death|dead|killed|suicide|rape|assault|lawsuit|court|arrested|police|religio\w*|politic\w*|election|government|betting|gambl\w*|racis\w*|abuse)\b/i;
 
 interface Cand { postId: string; platform: "fb" | "ig"; pageKey: string; created: string; caption: string; articleUrl: string | null }
@@ -38,9 +38,9 @@ async function plan(c: Cand) {
   if (!out) return; // transient: leave unsaved so the next run retries it
   const text = out.c?.trim() ?? "";
   if (!text) return save("skipped", out.k ?? null, null, cleanReason(out.s));
-  if (text.length > 240 || /https?:|www.|#w/.test(text) || /^(great|wow|interesting|absolutely|indeed)/i.test(text)) return save("skipped", out.k, null, "failed checks");
+  if (text.length > 240 || /https?:|www.|#w/.test(text) || /^(great|wow|interesting|absolutely|indeed)\b/i.test(text)) return save("skipped", out.k, null, "failed checks");
   if (text.length < 45 || text.split(/s+/).length < 8) return save("skipped", out.k, null, "too short");
-  if (/^(yes|no|yeah|nope)[,.!]?/i.test(text)) return save("skipped", out.k, null, "bare yes/no opening");
+  if (/^(yes|no|yeah|nope)\b[,.!]?/i.test(text)) return save("skipped", out.k, null, "bare yes/no opening");
   if (HYPE.test(text)) return save("skipped", out.k, null, "hype wording");
   if (out.k === "comparison" && out.o === "people") return save("skipped", out.k, null, "picks between people");
   const source = c.caption + " " + (article ?? "");
