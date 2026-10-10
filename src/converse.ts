@@ -6,7 +6,7 @@ import { sql } from "./db";
 import { askJson, RateLimited } from "./llm";
 import { fetchArticle } from "./article";
 
-const MIN_AGE_MIN = 10, MAX_AGE_H = 3;
+const MIN_AGE_MIN = 10, MAX_AGE_H = 6;
 const DAILY_CAP = 12;     // plans per Page+platform per day
 const HOLDOUT_PCT = 30;   // share of eligible posts left without a Page comment, for the with/without comparison
 const hash = (s: string) => [...s].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 7);
@@ -15,9 +15,11 @@ const RULES = `Write ONE comment (max 220 chars, 0-1 emoji, no hashtags/links) f
 - question: has a factual answer -> answer it
 - comparison: asks to choose between options -> pick ONE side + one-line reason (sport takes only)
 - loose: statement/news -> short natural reaction
-Use ONLY facts in the texts below; if unsure or sensitive (politics, religion, deaths, injuries, legal, abuse, betting, a person's character) set c to null. Never repeat a fact or number already in the post: add a view, an implication or a different fact from the article. Only call it a question if the post literally asks one; a comparison only if it names the options. Do not pick sides between named players or their fan bases (e.g. Reese vs Clark): set c to null. Reply in plain words that make sense on their own. Never start with Great/Wow/Interesting/Absolutely/Indeed. Fan tone, not a headline.
+Use ONLY facts in the texts below; if unsure or sensitive (politics, religion, deaths, injuries, legal, abuse, betting, a person's character) set c to null. Write a full sentence of at least 8 words that stands on its own (never a bare name, fragment, or a lone Yes/No). No hype words (dynasty, legacy, history, legendary, greatest). Never repeat a fact or number already in the post: add a view, an implication or a different fact from the article. Only call it a question if the post literally asks one; a comparison only if it names the options. Do not pick sides between named players or their fan bases (e.g. Reese vs Clark): set c to null. Reply in plain words that make sense on their own. Never start with Great/Wow/Interesting/Absolutely/Indeed. Fan tone, not a headline.
 JSON: {"k":"question|comparison|loose","o":"people|teams|ideas|none" (what a comparison chooses between),"c":string|null,"s":string|null (reason if c is null; never put the comment here)}`;
 
+const cleanReason = (r: string | null | undefined) => (r && r.length <= 70 && !/[!]/.test(r) ? r : "model declined");
+const HYPE = /(dynasty|legacy|legend(ary)?|greatest|goat|history|historic|unstoppable|masterclass|unreal|insane|mind-?blowing|pure magic|defines?)/i;
 const SENSITIVE = /\b(died|dies|death|dead|killed|suicide|rape|assault|lawsuit|court|arrested|police|religio\w*|politic\w*|election|government|betting|gambl\w*|racis\w*|abuse)\b/i;
 
 interface Cand { postId: string; platform: "fb" | "ig"; pageKey: string; created: string; caption: string; articleUrl: string | null }
@@ -35,8 +37,11 @@ async function plan(c: Cand) {
     `${RULES}\n\nPOST TEXT:\n${c.caption.slice(0, 600)}\n\nARTICLE TEXT:\n${article ?? "(not available - use the post text only)"}`);
   if (!out) return; // transient: leave unsaved so the next run retries it
   const text = out.c?.trim() ?? "";
-  if (!text) return save("skipped", out.k ?? null, null, out.s ?? "no comment");
-  if (text.length > 240 || /https?:|www\.|#\w/.test(text) || /^(great|wow|interesting|absolutely|indeed)\b/i.test(text)) return save("skipped", out.k, null, "failed checks");
+  if (!text) return save("skipped", out.k ?? null, null, cleanReason(out.s));
+  if (text.length > 240 || /https?:|www.|#w/.test(text) || /^(great|wow|interesting|absolutely|indeed)/i.test(text)) return save("skipped", out.k, null, "failed checks");
+  if (text.length < 45 || text.split(/s+/).length < 8) return save("skipped", out.k, null, "too short");
+  if (/^(yes|no|yeah|nope)[,.!]?/i.test(text)) return save("skipped", out.k, null, "bare yes/no opening");
+  if (HYPE.test(text)) return save("skipped", out.k, null, "hype wording");
   if (out.k === "comparison" && out.o === "people") return save("skipped", out.k, null, "picks between people");
   const source = c.caption + " " + (article ?? "");
   const nums = (text.match(/d[d.,]*/g) ?? []).map((n) => n.replace(/[.,]+$/, ""));
