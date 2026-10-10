@@ -1,0 +1,27 @@
+name: Post Page comments
+# Posts nothing unless the repo VARIABLE ENGAGEMENT_LIVE is "1" (Settings > Secrets and variables > Actions > Variables).
+# Without it, this only logs "WOULD POST" lines.
+on:
+  schedule: [{ cron: "22,52 * * * *" }]
+  workflow_dispatch:
+permissions: { contents: read }
+concurrency: { group: post, cancel-in-progress: false }
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      FACEBOOK_PAGE_ACCESS_TOKEN: ${{ secrets.FACEBOOK_PAGE_ACCESS_TOKEN }}
+      ENGAGEMENT_LIVE: ${{ vars.ENGAGEMENT_LIVE }}
+      LIVE_PAGES: ${{ vars.LIVE_PAGES }}
+      LIVE_KINDS: ${{ vars.LIVE_KINDS }}
+      DAILY_POST_CAP: ${{ vars.DAILY_POST_CAP }}
+      PER_RUN_CAP: ${{ vars.PER_RUN_CAP }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run migrate
+      - run: npm run post
