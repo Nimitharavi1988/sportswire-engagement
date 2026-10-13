@@ -4,7 +4,7 @@
 //   ENGAGEMENT_LIVE   "1" to really post, anything else (or unset) = dry-run log only
 //   LIVE_PAGES        comma list of page keys allowed to post     (default "cricketlive")
 //   LIVE_KINDS        comment types allowed                       (default "question,comparison")
-//   DAILY_POST_CAP    most comments per Page per rolling 24h      (default 3)
+//   DAILY_POST_CAP    most comments per Page per rolling 24h      (default 1)
 //   PER_RUN_CAP       most comments in one run                    (default 2)
 // Stops the whole run on a Meta rate-limit/spam/block error or after 3 failures in a row.
 import { PILOT_PAGES, GRAPH, LIVE } from "./config";
@@ -15,7 +15,7 @@ const list = (v: string | undefined, d: string) => (v?.trim() ? v : d).split(","
 const LIVE_PAGES = list(process.env.LIVE_PAGES, "cricketlive");
 const LIVE_KINDS = list(process.env.LIVE_KINDS, "question,comparison");
 const num = (v: string | undefined, d: number) => (v && Number.isFinite(Number(v)) && Number(v) > 0 ? Number(v) : d);
-const DAILY_CAP = num(process.env.DAILY_POST_CAP, 3);
+const DAILY_CAP = num(process.env.DAILY_POST_CAP, 1);
 const PER_RUN_CAP = num(process.env.PER_RUN_CAP, 2);
 const MIN_AGE_MIN = 10, MAX_AGE_H = 6;
 // Meta error codes that mean "stop": rate limit (4, 17, 32, 613), spam/blocked from acting (368), temporary block (1390008).
@@ -41,6 +41,7 @@ for (const pageKey of LIVE_PAGES) {
 
   const plans = await sql`SELECT post_id, platform, kind, text FROM page_comment
     WHERE page_key=${pageKey} AND status='planned' AND kind = ANY(${LIVE_KINDS})
+      AND right(btrim(text), 1) = '?'
       AND post_created_at < now() - make_interval(mins => ${MIN_AGE_MIN})
       AND post_created_at > now() - make_interval(hours => ${MAX_AGE_H})
     ORDER BY post_created_at DESC LIMIT 10`;
