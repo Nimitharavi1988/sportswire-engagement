@@ -34,3 +34,21 @@ await sql`CREATE TABLE IF NOT EXISTS page_comment (
   kind TEXT, text TEXT, status TEXT NOT NULL, reason TEXT, caption TEXT, article_url TEXT,
   posted_at TIMESTAMPTZ, posted_comment_id TEXT
 )`;
+// Follower counts over time: one row per account and snapshot. platform 'fb' = a Page's followers, 'ig' = an
+// Instagram account's followers, 'yt' = a YouTube channel's subscribers (followers NULL when the channel hides them).
+// media_count = Instagram posts / YouTube videos, to show how much was posted for the audience gained.
+await sql`CREATE TABLE IF NOT EXISTS follower_snapshot (
+  account_key TEXT NOT NULL, platform TEXT NOT NULL,
+  taken_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  followers INT, media_count INT, total_views BIGINT,
+  PRIMARY KEY (account_key, platform, taken_at)
+)`;
+// YouTube Shorts: a snapshot of each recent video's public counters per run (the channel's newest uploads).
+await sql`CREATE TABLE IF NOT EXISTS yt_metric (
+  video_id TEXT NOT NULL, channel_key TEXT NOT NULL,
+  taken_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  published_at TIMESTAMPTZ, title TEXT, duration_s INT,
+  views INT, likes INT, comments INT,
+  PRIMARY KEY (video_id, taken_at)
+)`;
+await sql`CREATE INDEX IF NOT EXISTS yt_metric_channel ON yt_metric (channel_key, taken_at DESC)`;

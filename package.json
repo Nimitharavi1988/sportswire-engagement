@@ -9,8 +9,18 @@
     "converse": "tsx src/converse.ts",
     "post": "tsx src/post.ts",
     "migrate": "tsx src/migrate.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "followers": "tsx src/followers.ts",
+    "youtube": "tsx src/youtube.ts",
+    "followers:report": "tsx src/followersReport.ts",
+    "test": "tsx --test src/youtubeParse.test.ts"
   },
-  "dependencies": { "@neondatabase/serverless": "^0.10.4" },
-  "devDependencies": { "tsx": "^4.19.0", "typescript": "^5.6.0", "@types/node": "^22.0.0" }
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "@types/node": "^22.0.0"
+  }
 }

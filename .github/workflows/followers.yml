@@ -1,0 +1,24 @@
+name: Followers and YouTube snapshot
+on:
+  schedule: [{ cron: "5 0,6,12,18 * * *" }]
+  workflow_dispatch:
+permissions: { contents: read }
+concurrency: { group: followers, cancel-in-progress: false }
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      FACEBOOK_PAGE_ACCESS_TOKEN: ${{ secrets.FACEBOOK_PAGE_ACCESS_TOKEN }}
+      # Optional: without it the YouTube step skips itself. A read-only API key for the YouTube Data API v3.
+      YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run migrate
+      - run: npm run followers
+      - run: npm run youtube
+        if: always()

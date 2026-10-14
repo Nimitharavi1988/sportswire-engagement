@@ -19,3 +19,9 @@ export const CONTROL_PAGES: PilotPage[] = [];
 
 export const GRAPH = "https://graph.facebook.com/v20.0";
 export const LIVE = process.env.ENGAGEMENT_LIVE === "1";
+
+// YouTube channels measured through the public YouTube Data API (YOUTUBE_API_KEY; read-only, nothing is written to YouTube).
+export const YOUTUBE_CHANNELS = [
+  { key: "yt-en", label: "Sports Wire Live (English)", handle: "@sportswirelivenews" },
+  { key: "yt-es", label: "Sports Wire Live en Español", handle: "@sportswireliveES" },
+];
