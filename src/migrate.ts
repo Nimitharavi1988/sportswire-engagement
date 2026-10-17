@@ -34,6 +34,14 @@ await sql`CREATE TABLE IF NOT EXISTS page_comment (
   kind TEXT, text TEXT, status TEXT NOT NULL, reason TEXT, caption TEXT, article_url TEXT,
   posted_at TIMESTAMPTZ, posted_comment_id TEXT
 )`;
+// Retention for reels and videos. avg_watch_ms: how long a viewer watches on average (Instagram ig_reels_avg_watch_time,
+// Facebook post_video_avg_time_watched); watch_total_ms: all the watch time; plays: Facebook reel plays; video_id: the
+// Facebook video's own id, which is what the website's SocialPost.externalPostId holds for a reel (the post id differs).
+await sql`ALTER TABLE post_metric ADD COLUMN IF NOT EXISTS video_id TEXT`;
+await sql`ALTER TABLE post_metric ADD COLUMN IF NOT EXISTS avg_watch_ms INT`;
+await sql`ALTER TABLE post_metric ADD COLUMN IF NOT EXISTS watch_total_ms BIGINT`;
+await sql`ALTER TABLE post_metric ADD COLUMN IF NOT EXISTS plays INT`;
+
 // Follower counts over time: one row per account and snapshot. platform 'fb' = a Page's followers, 'ig' = an
 // Instagram account's followers, 'yt' = a YouTube channel's subscribers (followers NULL when the channel hides them).
 // media_count = Instagram posts / YouTube videos, to show how much was posted for the audience gained.
