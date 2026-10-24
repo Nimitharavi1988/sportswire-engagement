@@ -2,7 +2,7 @@ name: Post Page comments
 # Posts nothing unless the repo VARIABLE ENGAGEMENT_LIVE is "1" (Settings > Secrets and variables > Actions > Variables).
 # Without it, this only logs "WOULD POST" lines.
 on:
-  schedule: [{ cron: "22,52 * * * *" }]
+  # PAUSED 2026-10-24 (user asked): schedule: [{ cron: "22,52 * * * *" }]
   workflow_dispatch:
 permissions: { contents: read }
 concurrency: { group: post, cancel-in-progress: false }

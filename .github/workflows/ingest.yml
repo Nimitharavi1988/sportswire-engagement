@@ -1,6 +1,6 @@
 name: Ingest comments
 on:
-  schedule: [{ cron: "*/15 * * * *" }]
+  # PAUSED 2026-10-24 (user asked): schedule: [{ cron: "*/15 * * * *" }]
   workflow_dispatch:
 permissions: { contents: read }
 concurrency: { group: ingest, cancel-in-progress: false }

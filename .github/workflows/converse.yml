@@ -1,6 +1,6 @@
 name: Plan Page comments (dry-run)
 on:
-  schedule: [{ cron: "7,37 * * * *" }]
+  # PAUSED 2026-10-24 (user asked): schedule: [{ cron: "7,37 * * * *" }]
   workflow_dispatch:
 permissions: { contents: read }
 concurrency: { group: converse, cancel-in-progress: false }
