@@ -1,6 +1,6 @@
 name: Insights snapshot
 on:
-  # PAUSED 2026-10-24 (user asked): schedule: [{ cron: "17 * * * *" }]
+  schedule: [{ cron: "17 * * * *" }]
   workflow_dispatch:
 permissions: { contents: read }
 concurrency: { group: insights, cancel-in-progress: false }
